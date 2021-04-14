@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 require('dotenv').config()
 
 const connection = mysql.createConnection({
-    host:'localhost',
+    host: 'localhost',
     user: 'root',
     password: '105546K@y',
     database: 'companyTracker_db',
@@ -39,23 +39,23 @@ const start = () => {
             switch (response.choices) {
                 case 'Show all Employees':
                     showEmployees();
-                    break; 
+                    break;
                 case 'Show Departments':
                     showDepartment();
-                    break; 
+                    break;
                 case 'Show Roles':
                     showRole();
-                    break; 
+                    break;
                 case 'Add new Department':
                     addDepartment();
-                    break; 
+                    break;
                 case 'Add new Role':
                     addRole();
-                    break; 
+                    break;
                 case 'Add new Employee':
                     addEmployee();
                     break;
-                case 'Update Employee roles': 
+                case 'Update Employee roles':
                     updateEmployee();
                     break;
                 case 'Quit':
@@ -89,51 +89,53 @@ const selectRole = () => {
     let roleArray = [];
     connection.query('SELECT * FROM company_roles', (err, results) => {
         err ? console.error(err) : results.forEach(role => {
-            roleArray.push(role)
+            roleArray.push(role);
         });
+        return roleArray;
     });
-    return roleArray;
 }
 
 const selectManager = () => {
     let managerArray = [];
     connection.query('SELECT first_name, last_name FROM company_employees WHERE manager_id IS NULL', (err, results) => {
         err ? console.error(err) : results.forEach(manager => {
-            managerArray.push(manager)
+            managerArray.push(manager);
         });
+        return managerArray;
     });
-    return managerArray;
 }
 
 //adds
 const addEmployee = () => {
     inquirer.prompt([{
-        name: 'first',
-        messsage: "What is the employee's first name?"
+        name: 'firstName',
+        message: "What is the employee's first name?",
     }, {
-        name: 'last',
-        message: "What is the employee's last name?"
+        name: 'lastName',
+        message: "What is the employee's last name?",
     }, {
         name: 'role',
         message: "What is the employee's role?",
+        type: 'list',
         choices: selectRole()
     }, {
         name: 'manager',
         message: "Who is this employee's Manager?",
+        type: 'list',
         choices: selectManager()
     }
     ])
-        .then(function (val) {
+        .then((val) => {
             let roleID = selectRole().indexOf(val.role) + 1
-            let managerID = selectManager().indexOf(val.manager) + 1
+            var managerID = selectManager().indexOf(val.manager) + 1
             connection.query('INSERT INTO company_employees SET ?',
                 {
-                    first_name: val.first,
-                    last_name: val.last,
-                    role_id: roleID,
-                    manager_id: managerID
+                    first_name: val.firstName,
+                    last_name: val.lastName,
+                    manager_id: managerID,
+                    role_id: roleID
                 }, (err) => {
-                    err ? console.error(err) : console.table(val);
+                    err ? console.error(err) : console.table(val)
                     showEmployees();
                 });
         });
@@ -174,7 +176,7 @@ const addDepartment = () => {
 }
 
 const updateEmployee = () => {
-    connection.query('SELECT company_employees.id, company_roles.title FROM company_employees JOIN company_roles ON company_roles.role_id = role.id', (err, results) => {
+    connection.query('SELECT company_employees.id, company_roles.title FROM company_employees JOIN company_roles ON company_roles.id = id', (err, results) => {
         err ? console.error(err) : console.table(results);
         inquirer
             .prompt([{
@@ -195,7 +197,7 @@ const updateEmployee = () => {
             }])
             .then((results) => {
                 let roleID = selectRole().indexOf(results.newRole) + 1
-                connection.query('UPDAATE company_employees SET WHERE ?',
+                connection.query('UPDATE company_employees SET WHERE ?',
                     {
                         id: res.identification
                     }, {
