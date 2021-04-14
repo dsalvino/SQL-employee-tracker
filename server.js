@@ -95,13 +95,32 @@ const selectRole = () => {
     });
 }
 
+const selectRole2 = () => {
+    connection.query('SELECT * FROM company_roles', (err, results) => {
+        let roleArray = [];
+        err ? console.error(err) :
+            results.forEach(({ id, title }) => {
+                roleArray.push(id, title);
+            });
+        return roleArray;
+    })
+        .then((answer) => {
+            let chosenRole;
+            results.forEach((role) => {
+                if (role.title === answer.choice) {
+                    chosenRole = role;
+                }
+            });
+        });
+}
+
 const selectManager = () => {
     let managerArray = [];
-    connection.query('SELECT first_name, last_name FROM company_employees WHERE manager_id IS NULL', (err, results) => {
+    connection.query('SELECT first_name, last_name FROM company_employees', (err, results) => {
         err ? console.error(err) : results.forEach(manager => {
             managerArray.push(manager);
+            return managerArray;
         });
-        return managerArray;
     });
 }
 
@@ -117,7 +136,7 @@ const addEmployee = () => {
         name: 'role',
         message: "What is the employee's role?",
         type: 'list',
-        choices: selectRole()
+        choices: selectRole2()
     }, {
         name: 'manager',
         message: "Who is this employee's Manager?",
@@ -139,6 +158,44 @@ const addEmployee = () => {
                     showEmployees();
                 });
         });
+}
+
+const addEmployee = () => {
+    connection.query('SELECT * FROM company_roles', (err, result) => {
+        err ? console.error(err) :
+            inquirer.prompt([{
+                name: 'firstName',
+                message: "What is the employee's first name?",
+            }, {
+                name: 'lastName',
+                message: "What is the employee's last name?",
+            }, {
+                name: 'employeeRole',
+                message: "What is the employee's Role?",
+                type: 'list',
+                choices() {
+                    const roleArray = [];
+                    results.forEach(({ title }) => {
+                        roleArray.push(title);
+                    });
+                    return roleArray;
+                },
+                name: 'manager',
+                message: "Who is this employee's Manager?",
+                type: 'list',
+                choices() {
+                    const managerArray = [];
+                    connection.query('SELECT * FROM company_employees', (err, results) => {
+                        err ? console.error(err) :
+                            results.forEach(({ first_name, last_name }) => {
+                                managerArray.push(first_name, last_name);
+                            });
+                        return managerArray;
+                    })
+                }
+            }
+            ])
+    })
 }
 
 const addRole = () => {
