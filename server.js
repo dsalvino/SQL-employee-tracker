@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
 });
 
 connection.connect((err) => {
-    err ? console.error(err) : console.log(`connected as id  ${connection.threadId}/n`);
+    err ? console.error(err) : console.log(`Connected!`);
     start();
 });
 
@@ -126,10 +126,10 @@ const addEmployee = () => {
                                 showEmployees();
                             })
                             start();
-                        })
-                })
-            })
-    })
+                        });
+                });
+            });
+    });
 }
 
 const addRole = () => {
@@ -167,39 +167,29 @@ const addDepartment = () => {
 }
 
 const updateEmployee = () => {
-    connection.query('SELECT company_employees.id, company_roles.title FROM company_employees JOIN company_roles ON company_roles.id = id', (err, results) => {
-        err ? console.error(err) : console.table(results);
-        inquirer
-            .prompt([{
-                name: 'identification',
-                message: 'Enter your Employee ID',
-                choices: () => {
-                    let id = [];
-                    results.forEach(persons => {
-                        id.push(persons.id);
-                        return id;
-                    });
-                }
-            }, {
-                name: 'newRole',
-                type: 'list',
-                message: "What is the employee's new Role?",
-                choices: selectRole()
-            }])
-            .then((results) => {
-                let roleID = selectRole().indexOf(results.newRole) + 1
-                connection.query('UPDATE company_employees SET WHERE ?',
-                    {
-                        id: res.identification
-                    }, {
-                    role_id: roleID
-                },
-                    (err) => {
-                        err ? console.error(err) : console.table(results);
-                        start();
+    connection.query('SELECT company_employees.id AS employeeID, company_employees.last_name AS employeeLast, company_roles.id AS roleID, company_roles.title AS roleTitle FROM employee LEFT JOIN company_roles ON company_employees.role_id = role.id',
+        (err, results) => {
+            err ? console.error(err) : console.table(results);
+            inquirer
+                .prompt([{
+                    name: 'identification',
+                    message: 'Input your Employee ID',
+                }, {
+                    name: 'newRole',
+                    type: 'list',
+                    message: "What is the employee's new Role?",
+                    choices: results.map((company_roles) => {
+                        return {
+                            name: `${company_roles.roleID}: ${company_roles.roleTitle}`,
+                            value: company_roles
+                        }
                     })
-
-            })
-    })
+                }
+                ]).then(({ identification, newRole }) => {
+                    connection.query(`UPDATE company_employees SET role_id = ${newRole.roleID} WHERE company_employees.id = ${identification}`, (err, results) => {
+                        err ? console.error(err) : console.table(results);
+                        showEmployees();
+                    });
+                });
+        });
 }
-
