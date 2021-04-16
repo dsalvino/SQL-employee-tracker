@@ -173,7 +173,7 @@ const updateEmployee = () => {
             inquirer
                 .prompt([{
                     name: 'identification',
-                    message: 'Input your Employee ID',
+                    message: '\nInput your Employee ID',
                 }, {
                     name: 'newRole',
                     type: 'list',
@@ -187,7 +187,7 @@ const updateEmployee = () => {
                 }
                 ]).then(({ identification, newRole }) => {
                     connection.query(`UPDATE company_employees SET role_id = ${newRole.roleID} WHERE company_employees.id = ${identification}`, (err, results) => {
-                        err ? console.error(err) : console.table(results);
+                        err ? console.error(err) : console.log('Successfully Updated!');
                         showEmployees();
                     });
                 });
