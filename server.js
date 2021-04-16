@@ -3,10 +3,10 @@ const inquirer = require('inquirer');
 require('dotenv').config()
 
 const connection = mysql.createConnection({
-    host: 'process.env.host',
-    user: 'process.env.user',
-    password: 'process.env.password',
-    database: 'process.env.database',
+    host: process.env.host,
+    user: process.env.user,
+    password: process.env.password,
+    database: process.env.database,
     port: '3306'
 });
 
@@ -64,7 +64,7 @@ const start = () => {
             }
         })
 }
-//shows
+
 const showEmployees = () => {
     connection.query('SELECT * FROM company_employees', (err, results) => {
         err ? console.error(err) : console.table(results);
@@ -85,83 +85,10 @@ const showRole = () => {
         start();
     });
 }
-const selectRole = () => {
-    let roleArray = [];
-    connection.query('SELECT * FROM company_roles', (err, results) => {
-        err ? console.error(err) : results.forEach(role => {
-            roleArray.push(role);
-        });
-        return roleArray;
-    });
-}
-
-const selectRole2 = () => {
-    connection.query('SELECT * FROM company_roles', (err, results) => {
-        let roleArray = [];
-        err ? console.error(err) :
-            results.forEach(({ id, title }) => {
-                roleArray.push(id, title);
-            });
-        return roleArray;
-    })
-        .then((answer) => {
-            let chosenRole;
-            results.forEach((role) => {
-                if (role.title === answer.choice) {
-                    chosenRole = role;
-                }
-            });
-        });
-}
-
-const selectManager = () => {
-    let managerArray = [];
-    connection.query('SELECT first_name, last_name FROM company_employees', (err, results) => {
-        err ? console.error(err) : results.forEach(manager => {
-            managerArray.push(manager);
-            return managerArray;
-        });
-    });
-}
 
 //adds
 const addEmployee = () => {
-    inquirer.prompt([{
-        name: 'firstName',
-        message: "What is the employee's first name?",
-    }, {
-        name: 'lastName',
-        message: "What is the employee's last name?",
-    }, {
-        name: 'role',
-        message: "What is the employee's role?",
-        type: 'list',
-        choices: selectRole2()
-    }, {
-        name: 'manager',
-        message: "Who is this employee's Manager?",
-        type: 'list',
-        choices: selectManager()
-    }
-    ])
-        .then((val) => {
-            let roleID = selectRole().indexOf(val.role) + 1
-            var managerID = selectManager().indexOf(val.manager) + 1
-            connection.query('INSERT INTO company_employees SET ?',
-                {
-                    first_name: val.firstName,
-                    last_name: val.lastName,
-                    manager_id: managerID,
-                    role_id: roleID
-                }, (err) => {
-                    err ? console.error(err) : console.table(val)
-                    showEmployees();
-                });
-        });
-}
-
-const addEmployee = () => {
-    connection.query('SELECT * FROM company_roles', (err, result) => {
+    connection.query('SELECT company_roles.id AS id, company_roles.title as title FROM company_roles', (err, results) => {
         err ? console.error(err) :
             inquirer.prompt([{
                 name: 'firstName',
@@ -173,28 +100,35 @@ const addEmployee = () => {
                 name: 'employeeRole',
                 message: "What is the employee's Role?",
                 type: 'list',
-                choices() {
-                    const roleArray = [];
-                    results.forEach(({ title }) => {
-                        roleArray.push(title);
-                    });
-                    return roleArray;
-                },
-                name: 'manager',
-                message: "Who is this employee's Manager?",
-                type: 'list',
-                choices() {
-                    const managerArray = [];
-                    connection.query('SELECT * FROM company_employees', (err, results) => {
-                        err ? console.error(err) :
-                            results.forEach(({ first_name, last_name }) => {
-                                managerArray.push(first_name, last_name);
-                            });
-                        return managerArray;
-                    })
-                }
+                choices: results.map((role) => {
+                    return {
+                        name: `${role.id}: ${role.title}`,
+                        value: role
+                    }
+                })
             }
-            ])
+            ]).then(({ firstName, lastName, employeeRole }) => {
+                connection.query('SELECT id, first_name, last_name FROM company_employees WHERE (id IN (SELECT manager_id FROM company_employees));', (err, results) => {
+                    err ? console.error(err) :
+                        inquirer.prompt([{
+                            name: 'manager',
+                            type: 'list',
+                            choices: results.map((management) => {
+                                return {
+                                    name: `${management.id}: ${management.last_name}, ${management.first_name}`,
+                                    value: management
+                                }
+                            })
+                        }]).then(({ manager }) => {
+                            connection.query(`INSERT INTO company_employees (first_name, last_name, role_id, manager_id) 
+                            VALUES ('${firstName}', '${lastName}', ${employeeRole.id}, ${manager.id});`, (err, results) => {
+                                err ? console.error(err) : console.log('\nYou have successfully added a new employee!');
+                                showEmployees();
+                            })
+                            start();
+                        })
+                })
+            })
     })
 }
 
