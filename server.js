@@ -167,7 +167,7 @@ const addDepartment = () => {
 }
 
 const updateEmployee = () => {
-    connection.query('SELECT company_employees.id AS employeeID, company_employees.last_name AS employeeLast, company_roles.id AS roleID, company_roles.title AS roleTitle FROM employee LEFT JOIN company_roles ON company_employees.role_id = role.id',
+    connection.query('SELECT company_employees.id AS employeeID, company_employees.last_name AS employeeLast, company_roles.id AS roleID, company_roles.title AS roleTitle FROM company_employees LEFT JOIN company_roles ON company_employees.role_id = company_roles.id',
         (err, results) => {
             err ? console.error(err) : console.table(results);
             inquirer
